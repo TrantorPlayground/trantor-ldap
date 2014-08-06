@@ -4,6 +4,7 @@
   "dependencies": {
     "express": "~4.6.1",
     "activedirectory": "~0.5.1",
-    "body-parser": "~1.4.3"
+    "body-parser": "~1.4.3",
+    "nconf": "~0.6.9"
   }
 }

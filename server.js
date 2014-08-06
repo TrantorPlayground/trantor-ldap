@@ -1,44 +1,3 @@
-var ldapServerAddress = "ldap://192.168.176.20"
-
-var ActiveDirectory = require('activedirectory');
-
-var adInstances = {};
-var getADInstance = function(req){
-	var user = req.headers["user"];
-	var pass = req.headers["pass"];
-	
-	var ad = adInstances[user + "|" + pass];
-	if(ad === null || typeof ad === 'undefined'){
-		ad = new ActiveDirectory(
-			{ 
-				url: ldapServerAddress,
-				 baseDN: 'dc=trantorchd,dc=com', 
-				 username: user,
-				 password: pass,
-				 attributes: {
-				     user: [ 
-				       'userPrincipalName', 'sAMAccountName', 'manager', 'mail',
-				       'lockoutTime', 'whenCreated', 'pwdLastSet', 'userAccountControl',
-				       'employeeID', 'sn', 'givenName', 'initials', 'cn', 'displayName',
-				       'comment', 'description', 'directReports' 
-				     ],
-				     group: [
-				       'objectCategory',
-				       'distinguishedName',
-				       'cn',
-				       'description',
-				       'member'
-				     ]
-				 } 
-			 }
-		 );
-		 adInstances[user + "|" + pass] = ad;
-	}
-	return ad;
-};
-
-
- 
  // BASE SETUP
  // =============================================================================
 
@@ -46,7 +5,12 @@ var getADInstance = function(req){
  var express    = require('express'); 		// call express
  var app        = express(); 				// define our app using express
  var bodyParser = require('body-parser');
-
+ var ActiveDirectory = require('activedirectory');
+ var nconf = require('nconf');
+ nconf.argv()
+        .env()
+        .file({ file: './config.json' });
+ 
  // configure app to use bodyParser()
  // this will let us get the data from a POST
  app.use(bodyParser.urlencoded({
@@ -54,6 +18,43 @@ var getADInstance = function(req){
  }));
 
  var port = process.env.PORT || 8080; 		// set our port
+
+ var ldapServerAddress = "ldap://" + nconf.get('ldapServerAddress');
+
+ var adInstances = {};
+ var getADInstance = function(req){
+ 	var user = req.headers["user"];
+ 	var pass = req.headers["pass"];
+	
+ 	var ad = adInstances[user + "|" + pass];
+ 	if(ad === null || typeof ad === 'undefined'){
+ 		ad = new ActiveDirectory(
+ 			{ 
+ 				url: ldapServerAddress,
+ 				 baseDN: 'dc=trantorchd,dc=com', 
+ 				 username: user,
+ 				 password: pass,
+ 				 attributes: {
+ 				     user: [ 
+ 				       'userPrincipalName', 'sAMAccountName', 'manager', 'mail',
+ 				       'lockoutTime', 'whenCreated', 'pwdLastSet', 'userAccountControl',
+ 				       'employeeID', 'sn', 'givenName', 'initials', 'cn', 'displayName',
+ 				       'comment', 'description', 'directReports' 
+ 				     ],
+ 				     group: [
+ 				       'objectCategory',
+ 				       'distinguishedName',
+ 				       'cn',
+ 				       'description',
+ 				       'member'
+ 				     ]
+ 				 } 
+ 			 }
+ 		 );
+ 		 adInstances[user + "|" + pass] = ad;
+ 	}
+ 	return ad;
+ };
 
  // ROUTES FOR OUR API
  // =============================================================================
@@ -102,6 +103,10 @@ var getADInstance = function(req){
 	 findLDAPUser(req.query.search_params, req, res);
  });
  
+ router.get('/authenticate', function(req, res){
+ 	res.json({success: "You are authenticated"});
+ })
+ 
  router.get('/users/:id', function(req, res) {
  	 findLDAPUser("description=" + req.params.id, req, res);
  });
@@ -123,6 +128,10 @@ var getADInstance = function(req){
  });
  
  router.get('/users/:id/direct-reports', function(req, res) {
+ 	res.json(500, {error: "API under construction"});	
+ });
+ 
+ router.post('/email', function(req, res){
  	res.json(500, {error: "API under construction"});	
  });
 
